@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">LiveReconstruction</string>
+    <string name="photo_error_message">Image save failed!</string>
+</resources>
