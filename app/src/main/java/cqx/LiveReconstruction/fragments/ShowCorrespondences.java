@@ -50,7 +50,7 @@ public class ShowCorrespondences extends Fragment {
     private MatOfKeyPoint keypoints1 = null;
     private MatOfKeyPoint keypoints2 = null;
     private MatOfDMatch matches = null;
-    private static final String TAG = "Reconstruction";
+    private static final String TAG = "ShowCorrespondences";
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View corrLayout = inflater.inflate(R.layout.correspondence, container, false);

@@ -1,6 +1,8 @@
 package cqx.LiveReconstruction.activities;
 
 import android.content.ContentValues;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import cqx.LiveReconstruction.R;
 
@@ -22,7 +24,9 @@ import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+
 
 import static org.opencv.imgcodecs.Imgcodecs.imwrite;
 
@@ -30,6 +34,7 @@ public class CameraActivity extends Activity implements CvCameraViewListener2{
     private CameraBridgeViewBase mCamera;
     private Mat mRgba, mBgr;
     private String TAG = "MyCameraView";
+    private ArrayList<Uri> uriList = new ArrayList<>();
     public void onResume()
     {
         super.onResume();
@@ -44,6 +49,8 @@ public class CameraActivity extends Activity implements CvCameraViewListener2{
         mCamera.setCvCameraViewListener(this);
         mCamera.enableView();
         mCamera.setOnClickListener(takephoto);
+        Intent intent = getIntent();
+        uriList = intent.getParcelableArrayListExtra("uriList");
     }
     private View.OnClickListener takephoto = new View.OnClickListener() {
         @Override
@@ -76,7 +83,9 @@ public class CameraActivity extends Activity implements CvCameraViewListener2{
             }
             Log.d(TAG, "Photo saved successfully to " + photoPath);
             try {
-                getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                uriList.add(uri);
+                //Log.d("uriTest",""+uri);
             } catch (final Exception e) {
                 Log.e(TAG, "Failed to insert photo into MediaStore");
                 e.printStackTrace();
@@ -118,19 +127,23 @@ public class CameraActivity extends Activity implements CvCameraViewListener2{
         mRgba = new Mat(height, width, CvType.CV_8UC4);
         mBgr = new Mat(height, width, CvType.CV_8UC3);
     }
-
-        @Override
-        public void onCameraViewStopped() {
-            mRgba.release();
-            mBgr.release();
-        }
-
-        @Override
-        public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
-            mRgba = inputFrame.rgba();
-            return mRgba;
-        }
-
+    @Override
+    public void onCameraViewStopped() {
+        mRgba.release();
+        mBgr.release();
+    }
+    @Override
+    public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
+        mRgba = inputFrame.rgba();
+        return mRgba;
+    }
+    @Override
+    public void onBackPressed() {
+        Intent intent = new Intent();
+        intent.putParcelableArrayListExtra("uriList",uriList);
+        setResult(1000,intent);
+        super.onBackPressed();
+    }
 
 
 
