@@ -4,6 +4,7 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 
+import android.app.Fragment;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
@@ -16,13 +17,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
-
-import java.io.File;
 import java.util.ArrayList;
-import java.util.LinkedList;
 
 import cqx.LiveReconstruction.R;
-import cqx.LiveReconstruction.fragments.CameraCalibration;
+import cqx.LiveReconstruction.fragments.CalibrationFragment;
 import cqx.LiveReconstruction.fragments.ShowCorrespondences;
 
 
@@ -33,7 +31,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private View cameraLayout;
     private View calibLayout;
     private ShowCorrespondences showCorrespondences;
-    private CameraCalibration cameraCalibration;
+    private CalibrationFragment calibrationFragment;
     private final int REQUEST_URI = 100;
     private ArrayList<Uri> uriList = new ArrayList<>();
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
@@ -90,15 +88,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         switch (index){
             case 0:
-                    showCorrespondences = new ShowCorrespondences();
-                    transaction.replace(R.id.content, showCorrespondences);
+                showCorrespondences = new ShowCorrespondences();
+                transaction.replace(R.id.content, showCorrespondences);
                 break;
             case 1:
-                    cameraCalibration = new CameraCalibration();
-                    Bundle bundle = new Bundle();
-                    bundle.putParcelableArrayList("uriList",uriList);
-                    cameraCalibration.setArguments(bundle);
-                    transaction.replace(R.id.content, cameraCalibration);
+                calibrationFragment = new CalibrationFragment();
+                Bundle bundle = new Bundle();
+                bundle.putParcelableArrayList("uriList",uriList);
+                calibrationFragment.setArguments(bundle);
+                transaction.replace(R.id.content, calibrationFragment);
 
                 break;
             case 2:
@@ -116,14 +114,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onPause() {
         super.onPause();
-        //sd.onPause();
+
     }
 
     @Override
     public void onResume() {
         super.onResume();
-
-        //sd.onResume();
         if (!OpenCVLoader.initDebug()) {
             Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
             OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_2_0, this, mLoaderCallback);
@@ -131,7 +127,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
-        setTabSelection(0);
     }
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -166,11 +161,5 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             getContentResolver().delete(uriList.get(i),null,null);
         }
         super.onBackPressed();
-    }
-    private String getPathFromURI(Uri uri){
-        Cursor cursor = getContentResolver().query(uri,null, null, null, null);
-        cursor.moveToFirst();
-        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-        return cursor.getString(column_index);
     }
 }
