@@ -4,18 +4,18 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfKeyPoint;
 
-public class CalibData {
+public class ImgData {
     private MatOfKeyPoint leftPoints;
     private MatOfKeyPoint rightPoints;
     private MatOfDMatch matches;
     private Mat fm;
-    public static CalibData newInstance(MatOfKeyPoint leftPoints, MatOfKeyPoint rightPoints, MatOfDMatch matches, Mat fm){
-        CalibData calibData = new CalibData();
-        calibData.leftPoints = leftPoints;
-        calibData.rightPoints = rightPoints;
-        calibData.matches = matches;
-        calibData.fm = fm;
-        return calibData;
+    public static ImgData newInstance(MatOfKeyPoint leftPoints, MatOfKeyPoint rightPoints, MatOfDMatch matches, Mat fm){
+        ImgData imgData = new ImgData();
+        imgData.leftPoints = leftPoints;
+        imgData.rightPoints = rightPoints;
+        imgData.matches = matches;
+        imgData.fm = fm;
+        return imgData;
     }
     public MatOfKeyPoint getLeftPoints(){return this.leftPoints;}
     public MatOfKeyPoint getRightPoints(){return this.rightPoints;}

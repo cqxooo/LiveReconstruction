@@ -35,7 +35,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import cqx.LiveReconstruction.R;
-import cqx.LiveReconstruction.activities.MainActivity;
 
 import static android.app.Activity.RESULT_OK;
 import static org.opencv.calib3d.Calib3d.FM_RANSAC;

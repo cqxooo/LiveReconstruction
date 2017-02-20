@@ -24,12 +24,11 @@ public class CalibrationFragment extends Fragment {
         Bundle bundle = getArguments();
         ArrayList<Uri> uriList = bundle.getParcelableArrayList("uriList");
         Calibration calib = new Calibration(uriList, getActivity());
-        ArrayList<Mat> fm = calib.computeK();
         String info = "";
-        for (int i=0;i<fm.size();i++){
-            double[] test = new double[9];
-            fm.get(i).get(0,0,test);
-            info = info + "FM"+i+":"+test[0]+","+ test[1]+","+ test[2]+","+ test[3]+","+ test[4]+","+ test[5]+","+ test[6]+","+ test[7]+","+ test[8]+"\n\n";
+        ArrayList<double[]> K = calib.computeK();
+        for (int i=0;i<K.size();i++){
+            double[] test = K.get(i);
+           info = info + "K"+i+":"+test[0]+","+ test[1]+","+ test[2]+","+ test[3]+"\n\n";
         }
         EditText output = (EditText)calibLayout.findViewById(R.id.editText);
         output.setText(info);
