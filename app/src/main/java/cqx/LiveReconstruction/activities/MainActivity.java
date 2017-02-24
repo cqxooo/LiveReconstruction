@@ -21,6 +21,7 @@ import java.util.ArrayList;
 
 import cqx.LiveReconstruction.R;
 import cqx.LiveReconstruction.fragments.CalibrationFragment;
+import cqx.LiveReconstruction.fragments.ReconFragment;
 import cqx.LiveReconstruction.fragments.ShowCorrespondences;
 
 
@@ -30,8 +31,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private View corrLayout;
     private View cameraLayout;
     private View calibLayout;
+    private View reconLayout;
     private ShowCorrespondences showCorrespondences;
     private CalibrationFragment calibrationFragment;
+    private ReconFragment reconFragment;
     private final int REQUEST_URI = 100;
     private ArrayList<Uri> uriList = new ArrayList<>();
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
@@ -64,9 +67,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         corrLayout = findViewById(R.id.corr_layout);
         cameraLayout = findViewById(R.id.camera_layout);
         calibLayout = findViewById(R.id.calib_layout);
+        reconLayout = findViewById(R.id.recon_layout);
         corrLayout.setOnClickListener(this);
         cameraLayout.setOnClickListener(this);
         calibLayout.setOnClickListener(this);
+        reconLayout.setOnClickListener(this);
     }
     @Override
     public void onClick(View v) {
@@ -77,8 +82,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.calib_layout:
                 setTabSelection(1);
                 break;
-            case R.id.camera_layout:
+            case R.id.recon_layout:
                 setTabSelection(2);
+                break;
+            case R.id.camera_layout:
+                setTabSelection(3);
                 break;
             default:
                 break;
@@ -86,6 +94,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
     private void setTabSelection(int index){
         FragmentTransaction transaction = fragmentManager.beginTransaction();
+        Bundle bundle = new Bundle();
+        bundle.putParcelableArrayList("uriList",uriList);
         switch (index){
             case 0:
                 showCorrespondences = new ShowCorrespondences();
@@ -93,13 +103,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case 1:
                 calibrationFragment = new CalibrationFragment();
-                Bundle bundle = new Bundle();
-                bundle.putParcelableArrayList("uriList",uriList);
                 calibrationFragment.setArguments(bundle);
                 transaction.replace(R.id.content, calibrationFragment);
-
                 break;
             case 2:
+                reconFragment = new ReconFragment();
+                reconFragment.setArguments(bundle);
+                transaction.replace(R.id.content, reconFragment);
+                break;
+            case 3:
                 Intent intent = new Intent(MainActivity.this, CameraActivity.class);
                 intent.putParcelableArrayListExtra("uriList",uriList);
                 startActivityForResult(intent, REQUEST_URI);

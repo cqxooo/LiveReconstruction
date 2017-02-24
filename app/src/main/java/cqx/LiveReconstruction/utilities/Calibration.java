@@ -44,12 +44,24 @@ public class Calibration {
         this.uriList = uri;
         this.mActivity = ma;
     }
-    public ArrayList<double[]> computeK(){
+    public ArrayList<double[]> computeKs(){
         ArrayList<double[]> K = new ArrayList<>();
         for(int i=0;i<uriList.size()-1;i++){
             ImgData imgData = detectCorrespondence(uriList.get(i),uriList.get(i+1));
             double focal[] = getFocal(imgData.getFM());
             K.add(new double[]{focal[0],focal[1],u0,v0});
+        }
+        return K;
+    }
+    public double[] computeK(){
+        double K[] = new double[4];
+        for(int i=0;i<uriList.size()-1;i++){
+            ImgData imgData = detectCorrespondence(uriList.get(i),uriList.get(i+1));
+            double focal[] = getFocal(imgData.getFM());
+            if(focal[0]>0 && focal[1]>0){
+                K = new double[]{focal[0],focal[1],u0,v0};
+                break;
+            }
         }
         return K;
     }
@@ -108,6 +120,8 @@ public class Calibration {
         }
     }
     public double[] getFocal(Mat fm){
+        //u0 = 320;
+        //v0 = 240;
         double focal[] = new double[2];
         double a1, b1, c1, d1, e1, f1;
         double a2, b2, c2, d2, e2, f2;
@@ -163,20 +177,29 @@ public class Calibration {
         c = (2*h1*h2*l1+h2*j1*j1-l1*i1*i2-i2*j1*k1+2*i1*j2*k1-i1*k2*j1-h1*k1*k2+i1*i1*l2)/a;
         d = (2*l1*j1*h2-i2*l1*k1+k1*k1*j2-l1*i1*k2-j1*k1*k2+2*i1*k1*l2)/a;
         e = (h2*l1*l1-l1*k1*k2+l2*k1*k1)/a;
-        Complex result[];
+        Complex x[];
+        Complex y[] = new Complex[4];
         double coef[] = {e,d,c,b,1};
         LaguerreSolver solver = new LaguerreSolver();
-        result = solver.solveAllComplex(coef, 0.0);
-        for(int i=0;i<result.length;i++){
-            if(result[i].getReal()>0 && result[i].getImaginary()==0){
-                focal[0] = result[i].getReal();
-                focal[1] = -(h1*focal[0]*focal[0]+j1*focal[0]+l1)/(i1*focal[0]+k1);
-                focal[0] = Math.sqrt(focal[0]);
-                focal[1] = Math.sqrt(focal[1]);
+        x = solver.solveAllComplex(coef, 0.0);
+        for(int i=0;i<x.length;i++){
+            //compute y: y = -(h1 * x^2 + j1 * x + l1)/(i1 * x + k1)
+            //s = h1 * x^2
+            //q = j1 * x;
+            //r = i1 * x;
+            Complex s = x[i].multiply(x[i]).multiply(h1);
+            Complex q = x[i].multiply(j1);
+            Complex r = x[i].multiply(i1);
+            y[i] = s.add(q).add(l1).divide(r.add(k1)).multiply(-1);
+        }
+        for(int i=0;i<x.length;i++){
+            if(x[i].getReal()>0 & y[i].getReal()>0){
+                focal[0] = Math.sqrt(x[i].getReal());
+                focal[1] = Math.sqrt(y[i].getReal());
+                break;
             }
         }
         return focal;
-
     }
     public double getB(double[] m, double[] n, double u0, double v0){
         double b;

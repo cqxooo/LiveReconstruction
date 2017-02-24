@@ -3,14 +3,10 @@ package cqx.LiveReconstruction.fragments;
 import android.app.Fragment;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-
-import org.opencv.core.Mat;
-
 import java.util.ArrayList;
 
 import cqx.LiveReconstruction.R;
@@ -25,7 +21,7 @@ public class CalibrationFragment extends Fragment {
         ArrayList<Uri> uriList = bundle.getParcelableArrayList("uriList");
         Calibration calib = new Calibration(uriList, getActivity());
         String info = "";
-        ArrayList<double[]> K = calib.computeK();
+        ArrayList<double[]> K = calib.computeKs();
         for (int i=0;i<K.size();i++){
             double[] test = K.get(i);
            info = info + "K"+i+":"+test[0]+","+ test[1]+","+ test[2]+","+ test[3]+"\n\n";
