@@ -1,5 +1,6 @@
 package cqx.LiveReconstruction.utilities;
 
+import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.opengl.GLU;
 
@@ -13,6 +14,7 @@ public class PointCloudRenderer implements GLSurfaceView.Renderer {
     public PointCloudRenderer(Mat pc) {
         pointCloud = new PointCloud(pc);
     }
+    public PointCloudRenderer(Context context){}
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
