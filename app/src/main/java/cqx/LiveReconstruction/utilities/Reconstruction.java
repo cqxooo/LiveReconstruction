@@ -26,7 +26,7 @@ public class Reconstruction {
         this.imgList = imgList;
         this.cameraMat.put(0,0,new double[]{K[0],0,K[2],0,K[1],K[3],0,0,1});
     }
-    public Mat InitPointCloud(){
+    /*public Mat InitPointCloud(){
         MatOfKeyPoint leftPoint = imgList.get(0).getLeftPoints();
         MatOfKeyPoint rightPoint = imgList.get(0).getRightPoints();
         MatOfDMatch gm = imgList.get(0).getMatches();
@@ -53,7 +53,7 @@ public class Reconstruction {
         Calib3d.triangulatePoints(P1,P2,kp1,kp2,pc_raw);
         Mat pc = divideLast(pc_raw);
         return pc;
-    }
+    }*/
     public Mat computeProjMat(Mat K, Mat R, Mat T){
         Mat Proj = new Mat(3,4,CvType.CV_64F);
         Mat RT = new Mat();

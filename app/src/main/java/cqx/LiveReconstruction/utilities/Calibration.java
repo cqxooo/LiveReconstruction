@@ -24,6 +24,7 @@ import org.opencv.core.Point;
 import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.features2d.DescriptorMatcher;
 import org.opencv.features2d.FeatureDetector;
+import org.opencv.imgproc.Imgproc;
 import org.opencv.utils.Converters;
 
 import java.io.IOException;
@@ -40,30 +41,71 @@ public class Calibration {
     public Activity mActivity;
     private double u0;
     private double v0;
+    public Calibration(double u0, double v0){
+        this.u0 = u0;
+        this.v0 = v0;
+    }
     public Calibration(ArrayList<Uri> uri, Activity ma){
         this.uriList = uri;
         this.mActivity = ma;
     }
     public ArrayList<double[]> computeKs(){
         ArrayList<double[]> K = new ArrayList<>();
-        for(int i=0;i<uriList.size()-1;i++){
-            ImgData imgData = detectCorrespondence(uriList.get(i),uriList.get(i+1));
-            double focal[] = getFocal(imgData.getFM());
-            K.add(new double[]{focal[0],focal[1],u0,v0});
+        return K;
+    }
+    public double[] computeK(Mat F){
+        double K[] = new double[4];
+        double focal[] = getFocal(F);
+        if(focal[0]>0 && focal[1]>0){
+            K = new double[]{focal[0],focal[1],u0,v0};
         }
         return K;
     }
     public double[] computeK(){
         double K[] = new double[4];
-        for(int i=0;i<uriList.size()-1;i++){
-            ImgData imgData = detectCorrespondence(uriList.get(i),uriList.get(i+1));
-            double focal[] = getFocal(imgData.getFM());
-            if(focal[0]>0 && focal[1]>0){
-                K = new double[]{focal[0],focal[1],u0,v0};
-                break;
+        return K;
+    }
+    public ImgData detectFeature(Mat mRgba){
+        Mat img = new Mat(mRgba.height(), mRgba.width(), CvType.CV_8UC3);;
+        Imgproc.cvtColor(mRgba, img, Imgproc.COLOR_RGBA2BGR, 3);
+        FeatureDetector detector = FeatureDetector.create(FeatureDetector.ORB);
+        DescriptorExtractor extractor = DescriptorExtractor.create(DescriptorExtractor.ORB);
+        MatOfKeyPoint keypoints = new MatOfKeyPoint();
+        Mat descriptors = new Mat();
+        detector.detect(img, keypoints);
+        extractor.compute(img, keypoints, descriptors);
+        return ImgData.newInstance(keypoints,descriptors);
+    }
+    public MatchInfo detectCorrespondence(ImgData left, ImgData right){
+        DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
+        MatOfDMatch matches = new MatOfDMatch();
+        matcher.match(left.getDescriptors(),right.getDescriptors(),matches);
+        List<DMatch> matchesList = matches.toList();
+        List<KeyPoint> kpList1 = left.getKeyPoint().toList();
+        List<KeyPoint> kpList2 = right.getKeyPoint().toList();
+        LinkedList<Point> points1 = new LinkedList<>();
+        LinkedList<Point> points2 = new LinkedList<>();
+        for (int i=0;i<matchesList.size();i++){
+            points1.addLast(kpList1.get(matchesList.get(i).queryIdx).pt);
+            points2.addLast(kpList2.get(matchesList.get(i).trainIdx).pt);
+        }
+        MatOfPoint2f kp1 = new MatOfPoint2f();
+        MatOfPoint2f kp2 = new MatOfPoint2f();
+        kp1.fromList(points1);
+        kp2.fromList(points2);
+        Mat inliner = new Mat();
+        Mat F = findFundamentalMat(kp1,kp2,FM_RANSAC,1,0.99, inliner);
+        List<Byte> isInliner = new ArrayList<>();
+        Converters.Mat_to_vector_uchar(inliner,isInliner);
+        LinkedList<DMatch> good_matches = new LinkedList<>();
+        MatOfDMatch gm = new MatOfDMatch();
+        for (int i=0;i<isInliner.size();i++){
+            if(isInliner.get(i)!=0){
+                good_matches.addLast(matchesList.get(i));
             }
         }
-        return K;
+        gm.fromList(good_matches);
+        return MatchInfo.newInstance(gm, F);
     }
     public ImgData detectCorrespondence(Uri left_path, Uri right_path){
         FeatureDetector detector = FeatureDetector.create(FeatureDetector.ORB);
@@ -113,7 +155,8 @@ public class Calibration {
                 }
             }
             gm.fromList(good_matches);
-            return ImgData.newInstance(keypoints1,keypoints2,gm, F);
+            return null;
+            //return ImgData.newInstance(keypoints1,keypoints2,gm, F);
         }catch (IOException e){
             Log.e(TAG,e.toString());
             return null;

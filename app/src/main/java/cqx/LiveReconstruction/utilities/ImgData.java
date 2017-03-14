@@ -5,20 +5,14 @@ import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfKeyPoint;
 
 public class ImgData {
-    private MatOfKeyPoint leftPoints;
-    private MatOfKeyPoint rightPoints;
-    private MatOfDMatch matches;
-    private Mat fm;
-    public static ImgData newInstance(MatOfKeyPoint leftPoints, MatOfKeyPoint rightPoints, MatOfDMatch matches, Mat fm){
+    private MatOfKeyPoint keyPoint;
+    private Mat descriptors;
+    public static ImgData newInstance(MatOfKeyPoint keyPoint, Mat descriptors){
         ImgData imgData = new ImgData();
-        imgData.leftPoints = leftPoints;
-        imgData.rightPoints = rightPoints;
-        imgData.matches = matches;
-        imgData.fm = fm;
+        imgData.keyPoint = keyPoint;
+        imgData.descriptors = descriptors;
         return imgData;
     }
-    public MatOfKeyPoint getLeftPoints(){return this.leftPoints;}
-    public MatOfKeyPoint getRightPoints(){return this.rightPoints;}
-    public MatOfDMatch getMatches(){return this.matches;}
-    public Mat getFM(){return this.fm;}
+    public MatOfKeyPoint getKeyPoint(){return this.keyPoint;}
+    public Mat getDescriptors(){return this.descriptors;}
 }

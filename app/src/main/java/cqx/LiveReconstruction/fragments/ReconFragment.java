@@ -31,17 +31,12 @@ public class ReconFragment extends Fragment {
         mSurfaceView = (GLSurfaceView)reconLayout.findViewById(R.id.recon_layout);
         Bundle bundle = getArguments();
         ArrayList<Uri> uriList = bundle.getParcelableArrayList("uriList");
-        ArrayList<ImgData> imgList = new ArrayList<>();
         Calibration calib = new Calibration(uriList, getActivity());
         double K[] = calib.computeK();
         Log.d(TAG,""+K[0]+" "+K[1]+" "+K[2]+" "+K[3]);
-        for(int i=0;i<uriList.size()-1;i++){
-            ImgData imgData = calib.detectCorrespondence(uriList.get(i),uriList.get(i+1));
-            imgList.add(imgData);
-        }
-        final Reconstruction recon = new Reconstruction(imgList, K);
-        Mat pointCloud = recon.InitPointCloud();
-        mSurfaceView.setRenderer(new PointCloudRenderer(pointCloud));
+        //final Reconstruction recon = new Reconstruction(imgList, K);
+        //Mat pointCloud = recon.InitPointCloud();
+        //mSurfaceView.setRenderer(new PointCloudRenderer(pointCloud));
         return reconLayout;
     }
     @Override
