@@ -7,40 +7,52 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDMatch;
+import org.opencv.core.MatOfDouble;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point;
-import org.opencv.core.Range;
+import org.opencv.core.Point3;
 import org.opencv.core.Scalar;
-
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 
+import static org.opencv.calib3d.Calib3d.Rodrigues;
 import static org.opencv.calib3d.Calib3d.findEssentialMat;
+import static org.opencv.calib3d.Calib3d.solvePnPRansac;
 
 public class Reconstruction {
     private static final String TAG = "Reconstruction";
-    private ArrayList<ImgData> imgList;
     private Mat cameraMat = new Mat(3,3, CvType.CV_64F);
-    public Reconstruction(ArrayList<ImgData> imgList, double[] K){
-        this.imgList = imgList;
+    private Mat pointCloud;
+    private ArrayList<int[]> correspondence_idx = new ArrayList<>();
+    private Mat LastP;
+    public Reconstruction(double[] K){
         this.cameraMat.put(0,0,new double[]{K[0],0,K[2],0,K[1],K[3],0,0,1});
     }
-    /*public Mat InitPointCloud(){
-        MatOfKeyPoint leftPoint = imgList.get(0).getLeftPoints();
-        MatOfKeyPoint rightPoint = imgList.get(0).getRightPoints();
-        MatOfDMatch gm = imgList.get(0).getMatches();
+    public Mat InitPointCloud(ImgData left, ImgData right, MatOfDMatch gm){
+        MatOfKeyPoint leftPoint = left.getKeyPoint();
+        MatOfKeyPoint rightPoint = right.getKeyPoint();
         Mat em;
         Mat rot2 = new Mat(3,3,CvType.CV_64F);
-        Mat t2 = new Mat(3,3,CvType.CV_64F);
+        Mat t2 = new Mat(3,1,CvType.CV_64F);
         LinkedList<Point> ptlist1 = new LinkedList<>();
         LinkedList<Point> ptlist2 = new LinkedList<>();
         MatOfPoint2f kp1 = new MatOfPoint2f();
         MatOfPoint2f kp2 = new MatOfPoint2f();
+        int[] left_idx = new int[leftPoint.height()];
+        int[] right_idx = new int[rightPoint.height()];
+        Arrays.fill(left_idx,-1);
+        Arrays.fill(right_idx,-1);
         for(int i=0;i<gm.toList().size();i++){
             ptlist1.addLast(leftPoint.toList().get(gm.toList().get(i).queryIdx).pt);
             ptlist2.addLast(rightPoint.toList().get(gm.toList().get(i).trainIdx).pt);
+            left_idx[gm.toList().get(i).queryIdx] = i;
+            right_idx[gm.toList().get(i).trainIdx] = i;
         }
+        correspondence_idx.add(left_idx);
+        correspondence_idx.add(right_idx);
         kp1.fromList(ptlist1);
         kp2.fromList(ptlist2);
         em = findEssentialMat(kp1, kp2, cameraMat);
@@ -51,9 +63,10 @@ public class Reconstruction {
         Mat P2 = computeProjMat(cameraMat, rot2, t2);
         Mat pc_raw = new Mat();
         Calib3d.triangulatePoints(P1,P2,kp1,kp2,pc_raw);
-        Mat pc = divideLast(pc_raw);
-        return pc;
-    }*/
+        pointCloud = divideLast(pc_raw);
+        LastP = P2.clone();
+        return pointCloud.clone();
+    }
     public Mat computeProjMat(Mat K, Mat R, Mat T){
         Mat Proj = new Mat(3,4,CvType.CV_64F);
         Mat RT = new Mat();
@@ -72,5 +85,66 @@ public class Reconstruction {
             pc.push_back(col.t());
         }
         return pc.colRange(0,3);
+    }
+    public Mat addImage(ImgData left, ImgData right, MatOfDMatch gm){
+        MatOfPoint3f pc3f = MatToPoint3f(pointCloud);
+        MatOfKeyPoint leftPoint = left.getKeyPoint();
+        MatOfKeyPoint rightPoint = right.getKeyPoint();
+        LinkedList<Point3> pclist = new LinkedList<>();
+        LinkedList<Point> right_inPC = new LinkedList<>();
+        LinkedList<Point> leftlist = new LinkedList<>();
+        LinkedList<Point> rightist = new LinkedList<>();
+        MatOfPoint3f pc = new MatOfPoint3f();
+        MatOfPoint2f kp1 = new MatOfPoint2f();
+        MatOfPoint2f kp2 = new MatOfPoint2f();
+        int count = pointCloud.height();
+        int[] left_idx = correspondence_idx.get(correspondence_idx.size()-1);
+        int[] right_idx = new int[rightPoint.height()];
+        Arrays.fill(right_idx,-1);
+        for(int i=0;i<gm.toList().size();i++){
+            if(left_idx[gm.toList().get(i).queryIdx] >=0 ){
+                pclist.addLast(pc3f.toList().get(left_idx[gm.toList().get(i).queryIdx]));
+                right_inPC.addLast(rightPoint.toList().get(gm.toList().get(i).trainIdx).pt);
+                right_idx[gm.toList().get(i).trainIdx] = left_idx[gm.toList().get(i).queryIdx];
+            }
+            else{
+                leftlist.addLast(leftPoint.toList().get(gm.toList().get(i).queryIdx).pt);
+                rightist.addLast(rightPoint.toList().get(gm.toList().get(i).trainIdx).pt);
+                left_idx[gm.toList().get(i).queryIdx] = count;
+                right_idx[gm.toList().get(i).trainIdx] = count;
+                count++;
+            }
+        }
+        pc.fromList(pclist);
+        kp2.fromList(right_inPC);
+        Mat rotvec = new Mat(3,1,CvType.CV_64F);
+        Mat rot = new Mat(3,3,CvType.CV_64F);
+        Mat t = new Mat(3,1,CvType.CV_64F);
+        solvePnPRansac(pc,kp2,cameraMat,new MatOfDouble(),rotvec,t);
+        kp1.fromList(leftlist);
+        kp2.fromList(rightist);
+        Rodrigues(rotvec,rot);
+        Mat P = computeProjMat(cameraMat, rot, t);
+        Mat pc_raw = new Mat();
+        Calib3d.triangulatePoints(LastP,P,kp1,kp2,pc_raw);
+        Mat new_PC = divideLast(pc_raw);
+        pointCloud.push_back(new_PC);
+        LastP = P.clone();
+        return pointCloud.clone();
+    }
+    public MatOfPoint3f MatToPoint3f(Mat m){
+        MatOfPoint3f points = new MatOfPoint3f();
+        LinkedList<Point3> ptlist = new LinkedList<>();
+        Point3 pt = new Point3();
+        Mat doubleM = new Mat();
+        m.convertTo(doubleM,CvType.CV_64F);
+        for(int i=0;i<m.height();i++){
+            double[] tmp = new double[3];
+            doubleM.get(0,0,tmp);
+            pt.set(tmp);
+            ptlist.add(pt);
+        }
+        points.fromList(ptlist);
+        return points;
     }
 }

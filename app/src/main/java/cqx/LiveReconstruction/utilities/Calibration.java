@@ -94,7 +94,7 @@ public class Calibration {
         kp1.fromList(points1);
         kp2.fromList(points2);
         Mat inliner = new Mat();
-        Mat F = findFundamentalMat(kp1,kp2,FM_RANSAC,1,0.99, inliner);
+        Mat F = findFundamentalMat(kp1,kp2,FM_RANSAC,3,0.99, inliner);
         List<Byte> isInliner = new ArrayList<>();
         Converters.Mat_to_vector_uchar(inliner,isInliner);
         LinkedList<DMatch> good_matches = new LinkedList<>();

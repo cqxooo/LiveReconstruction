@@ -9,14 +9,20 @@ import cqx.LiveReconstruction.R;
 import cqx.LiveReconstruction.utilities.Calibration;
 import cqx.LiveReconstruction.utilities.ImgData;
 import cqx.LiveReconstruction.utilities.MatchInfo;
+import cqx.LiveReconstruction.utilities.PointCloudView;
+import cqx.LiveReconstruction.utilities.Reconstruction;
 import cqx.LiveReconstruction.utilities.SensorData;
 
 import android.app.Activity;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import org.opencv.android.CameraBridgeViewBase;
@@ -42,12 +48,18 @@ public class CameraActivity extends Activity implements CvCameraViewListener2{
     private boolean ReconMode = false;
     private boolean isMoving = false;
     private boolean isTaking = false;
-    private int count;
+    private int count = 0;
+    private int recon_process = 0;
     private double cameraMat[] = new double[4];
     private Calibration calib;
     private ArrayList<MatchInfo> matchList = new ArrayList<>();
     private ArrayList<ImgData> dataList = new ArrayList<>();
     private String TAG = "MyCameraView";
+    private Reconstruction recon;
+    private RelativeLayout renderContainer;
+    private PointCloudView pointCloudView;
+    private Handler customHandler = new Handler();
+    private Button take;
     //private ArrayList<Uri> uriList = new ArrayList<>();
 
     @Override
@@ -56,12 +68,19 @@ public class CameraActivity extends Activity implements CvCameraViewListener2{
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.camera);
         initViews();
+        //updatePointCloud.run();
         //mCamera.setOnClickListener(takephoto);
         //Intent intent = getIntent();
         //uriList = intent.getParcelableArrayListExtra("uriList");
     }
     private void initViews(){
         mCamera = (CameraBridgeViewBase) findViewById(R.id.camera_view);
+        renderContainer = (RelativeLayout)findViewById(R.id.render_view);
+        take = (Button)findViewById(R.id.take_photo);
+        take.setOnClickListener(takephoto);
+        pointCloudView = new PointCloudView(this);
+        renderContainer.addView(pointCloudView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        renderContainer.setVisibility(View.VISIBLE);
         mCamera.setCvCameraViewListener(this);
         mCamera.enableView();
         SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -71,6 +90,34 @@ public class CameraActivity extends Activity implements CvCameraViewListener2{
     private View.OnClickListener takephoto = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
+            if(count==0 && ReconMode){
+                //saveImage(mRgba);
+                dataList.add(calib.detectFeature(mRgba));
+                count++;
+            }
+            else if(count>0 && ReconMode) {
+                    //saveImage(mRgba);
+                    dataList.add(calib.detectFeature(mRgba));
+                    matchList.add(calib.detectCorrespondence(dataList.get(count - 1), dataList.get(count)));
+                    if (cameraMat[0] == 0) {
+                        cameraMat = calib.computeK(matchList.get(count - 1).getFM());
+                        Log.d("calib", "" + cameraMat[0] + ", " + cameraMat[1] + ", " + cameraMat[2] + ", " + cameraMat[3]);
+                    }
+                    if (recon_process == 0 && cameraMat[0] != 0) {
+                        recon = new Reconstruction(cameraMat);
+                        Mat pc = recon.InitPointCloud(dataList.get(recon_process), dataList.get(recon_process + 1), matchList.get(recon_process).getMatches());
+                        pointCloudView.setPc(pc);
+                        recon_process += 2;
+                    }
+                    else if(recon_process>0 && cameraMat[0] !=0){
+                        Mat pc = recon.addImage(dataList.get(recon_process-1),dataList.get(recon_process),matchList.get(recon_process-1).getMatches());
+                        pointCloudView.setPc(pc);
+                        recon_process += 1;
+                    }
+                    Log.d(TAG,"count: "+count+" recon:"+recon_process);
+                    count++;
+                    isTaking = false;
+            }
 
         }
     };
@@ -162,7 +209,7 @@ public class CameraActivity extends Activity implements CvCameraViewListener2{
     @Override
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
         mRgba = inputFrame.rgba();
-        if(count==0 && ReconMode){
+        /*if(count==0 && ReconMode){
             //saveImage(mRgba);
             dataList.add(calib.detectFeature(mRgba));
             count++;
@@ -176,13 +223,19 @@ public class CameraActivity extends Activity implements CvCameraViewListener2{
                     cameraMat = calib.computeK(matchList.get(count - 1).getFM());
                     Log.d("calib", "" + cameraMat[0] + ", " + cameraMat[1] + ", " + cameraMat[2] + ", " + cameraMat[3]);
                 }
+                if (recon_process == 0 && cameraMat[0] != 0) {
+                    recon = new Reconstruction(cameraMat);
+                    Mat pc = recon.InitPointCloud(dataList.get(recon_process), dataList.get(recon_process + 1), matchList.get(recon_process).getMatches());
+                    pointCloudView.setPc(pc);
+                    recon_process += 2;
+                }
+
                 count++;
                 isTaking = false;
             }
-        }
+        }*/
         return mRgba;
     }
-
     /*
     @Override
     public void onBackPressed() {

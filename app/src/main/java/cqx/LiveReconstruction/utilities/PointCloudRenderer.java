@@ -11,11 +11,12 @@ import javax.microedition.khronos.opengles.GL10;
 
 public class PointCloudRenderer implements GLSurfaceView.Renderer {
     private PointCloud pointCloud;
-    public PointCloudRenderer(Mat pc) {
-        pointCloud = new PointCloud(pc);
+    private int height;
+    private int width;
+    public volatile Mat pc;
+    public PointCloudRenderer(){
+        this.pointCloud = new PointCloud();
     }
-    public PointCloudRenderer(Context context){}
-
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         gl.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -30,14 +31,15 @@ public class PointCloudRenderer implements GLSurfaceView.Renderer {
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
+        this.height = height;
+        this.width = width;
         if (height == 0) {
             height = 1;
         }
-        float aspect = (float) width / height;
         gl.glViewport(0, 0, width, height);
         gl.glMatrixMode(GL10.GL_PROJECTION);
         gl.glLoadIdentity();
-        GLU.gluPerspective(gl, 45, aspect, 0.1f, 100.0f);
+        GLU.gluPerspective(gl, 45, (float) height * 2.0f/(float)width, 0.1f, 100.0f);
         gl.glMatrixMode(GL10.GL_MODELVIEW);
         gl.glLoadIdentity();
     }
@@ -46,8 +48,10 @@ public class PointCloudRenderer implements GLSurfaceView.Renderer {
     public void onDrawFrame(GL10 gl) {
         gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
         gl.glLoadIdentity();
-        gl.glTranslatef(0.0f, 0.0f, -1.0f);
+        gl.glTranslatef(0.0f, 0.0f, -3.0f);
         //gl.glRotatef(45,1.0f,1.0f,1.0f);
+        this.pointCloud.setResolution(width,height);
+        this.pointCloud.setPoints(pc);
         pointCloud.draw(gl);
     }
 }

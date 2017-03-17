@@ -31,16 +31,17 @@ public class SensorData {
     private float[] velocity = {0,0,0};
     private float[] shift = {0,0,0};
     private float[] last_accel = {0,0,0};
+    private float last_rot;
     public SensorData(SensorManager sm, CameraActivity cameraActivity){
         this.sm = sm;
         this.cameraActivity = cameraActivity;
         aSensor = sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
         gSensor = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        //rSensor = sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+        rSensor = sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
         //wSensor = sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         sm.registerListener(Listener, aSensor, SensorManager.SENSOR_DELAY_NORMAL);
         sm.registerListener(Listener, gSensor, SensorManager.SENSOR_DELAY_NORMAL);
-        //sm.registerListener(aListener, aSensor, SensorManager.SENSOR_DELAY_GAME);
+        sm.registerListener(Listener, rSensor, SensorManager.SENSOR_DELAY_NORMAL);
         //sm.registerListener(wListener, wSensor, SensorManager.SENSOR_DELAY_GAME);
     }
     public void onPause() {
@@ -50,6 +51,7 @@ public class SensorData {
     public void onResume() {
         sm.registerListener(Listener, aSensor, SensorManager.SENSOR_DELAY_NORMAL);
         sm.registerListener(Listener, gSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        sm.registerListener(Listener, rSensor, SensorManager.SENSOR_DELAY_NORMAL);
     }
     private SensorEventListener Listener = new SensorEventListener() {
         @Override
@@ -110,6 +112,12 @@ public class SensorData {
                         //Log.d("shift","X: "+shift[0]+", Y: "+shift[1]+", Z: "+shift[2]);
                         //Log.d("time",""+dt);
                     }
+                    break;
+                case Sensor.TYPE_ROTATION_VECTOR:
+                    float[] rot= event.values.clone();
+                    //Log.d("rot",""+rot[0]+", "+rot[1]+", "+rot[2]+", "+rot[3]+"angle: "+Math.acos(rot[3])*360/Math.PI);
+
+
                     break;
                 default:
                     return;
