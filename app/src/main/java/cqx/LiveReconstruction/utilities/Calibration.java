@@ -66,7 +66,7 @@ public class Calibration {
         return K;
     }
     public ImgData detectFeature(Mat mRgba){
-        Mat img = new Mat(mRgba.height(), mRgba.width(), CvType.CV_8UC3);;
+        Mat img = new Mat(mRgba.height(), mRgba.width(), CvType.CV_8UC3);
         Imgproc.cvtColor(mRgba, img, Imgproc.COLOR_RGBA2BGR, 3);
         FeatureDetector detector = FeatureDetector.create(FeatureDetector.ORB);
         DescriptorExtractor extractor = DescriptorExtractor.create(DescriptorExtractor.ORB);
@@ -74,7 +74,22 @@ public class Calibration {
         Mat descriptors = new Mat();
         detector.detect(img, keypoints);
         extractor.compute(img, keypoints, descriptors);
+        //Mat color = extractKeypointColor(keypoints, mRgba);
         return ImgData.newInstance(keypoints,descriptors);
+    }
+    public Mat extractKeypointColor(MatOfKeyPoint keyPoint, Mat img){
+        Mat color = new Mat(keyPoint.height(),1,CvType.CV_32FC4);
+        float scale = 1.0f/256.0f;
+        for(int i=0;i<keyPoint.toList().size();i++){
+            int y = (int)keyPoint.toList().get(i).pt.y;
+            int x = (int)keyPoint.toList().get(i).pt.x;
+            double[] tmp = img.get(y, x);
+            for(int j=0;j<color.channels();j++){
+                tmp[j] *= scale;
+            }
+            color.put(i,0,tmp);
+        }
+        return color.clone();
     }
     public MatchInfo detectCorrespondence(ImgData left, ImgData right){
         DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);

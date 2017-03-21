@@ -18,8 +18,8 @@
         android:layout_height="match_parent">
         <Button
             android:id="@+id/take_photo"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:layout_alignParentTop="true"
             android:layout_alignParentEnd="true"
             android:layout_marginTop="26dp"

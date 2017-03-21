@@ -26,12 +26,15 @@ public class Reconstruction {
     private static final String TAG = "Reconstruction";
     private Mat cameraMat = new Mat(3,3, CvType.CV_64F);
     private Mat pointCloud;
+    private Mat color;
     private ArrayList<int[]> correspondence_idx = new ArrayList<>();
     private Mat LastP;
+    private final float scale = 1.0f/256.0f;
     public Reconstruction(double[] K){
         this.cameraMat.put(0,0,new double[]{K[0],0,K[2],0,K[1],K[3],0,0,1});
     }
-    public Mat InitPointCloud(ImgData left, ImgData right, MatOfDMatch gm){
+    public Mat InitPointCloud(ImgData left, ImgData right, MatOfDMatch gm, Mat img){
+        color = new Mat(gm.toList().size(), 1, CvType.CV_32FC4);
         MatOfKeyPoint leftPoint = left.getKeyPoint();
         MatOfKeyPoint rightPoint = right.getKeyPoint();
         Mat em;
@@ -50,6 +53,14 @@ public class Reconstruction {
             ptlist2.addLast(rightPoint.toList().get(gm.toList().get(i).trainIdx).pt);
             left_idx[gm.toList().get(i).queryIdx] = i;
             right_idx[gm.toList().get(i).trainIdx] = i;
+            int y = (int) rightPoint.toList().get(gm.toList().get(i).trainIdx).pt.y;
+            int x = (int) rightPoint.toList().get(gm.toList().get(i).trainIdx).pt.x;
+            double[] tmp = img.get(y, x);
+            tmp[0] *= scale;
+            tmp[1] *= scale;
+            tmp[2] *= scale;
+            tmp[3] *= scale;
+            color.put(i, 0, tmp);
         }
         correspondence_idx.add(left_idx);
         correspondence_idx.add(right_idx);
@@ -86,7 +97,7 @@ public class Reconstruction {
         }
         return pc.colRange(0,3);
     }
-    public Mat addImage(ImgData left, ImgData right, MatOfDMatch gm){
+    public Mat addImage(ImgData left, ImgData right, MatOfDMatch gm, Mat img){
         MatOfPoint3f pc3f = MatToPoint3f(pointCloud);
         MatOfKeyPoint leftPoint = left.getKeyPoint();
         MatOfKeyPoint rightPoint = right.getKeyPoint();
@@ -112,6 +123,15 @@ public class Reconstruction {
                 rightist.addLast(rightPoint.toList().get(gm.toList().get(i).trainIdx).pt);
                 left_idx[gm.toList().get(i).queryIdx] = count;
                 right_idx[gm.toList().get(i).trainIdx] = count;
+                int y = (int) rightPoint.toList().get(gm.toList().get(i).trainIdx).pt.y;
+                int x = (int) rightPoint.toList().get(gm.toList().get(i).trainIdx).pt.x;
+                double[] tmp = img.get(y, x);
+                tmp[0] *= scale;
+                tmp[1] *= scale;
+                tmp[2] *= scale;
+                tmp[3] *= scale;
+                Mat dummy = new Mat(1,1,CvType.CV_32FC4);
+                color.push_back(dummy);
                 count++;
             }
         }
@@ -146,5 +166,16 @@ public class Reconstruction {
         }
         points.fromList(ptlist);
         return points;
+    }
+    public float[] getColor(){
+        float[] c = new float[color.height()*4];
+        for(int i=0;i<color.height();i++){
+            double[] tmp = color.get(i,0);
+            c[i] = (float) tmp[0];
+            c[i+1] = (float) tmp[1];
+            c[i+2] = (float) tmp[2];
+            c[i+3] = (float) tmp[3];
+        }
+        return c;
     }
 }

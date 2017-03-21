@@ -50,7 +50,8 @@ public class CameraActivity extends Activity implements CvCameraViewListener2{
     private boolean isTaking = false;
     private int count = 0;
     private int recon_process = 0;
-    private double cameraMat[] = new double[4];
+    private double cameraMat[] = new double[]{1546.2204814278814,1544.2573675548667,968.37921819090309,564.78182294137491};
+    //private double cameraMat[] = new double[4];
     private Calibration calib;
     private ArrayList<MatchInfo> matchList = new ArrayList<>();
     private ArrayList<ImgData> dataList = new ArrayList<>();
@@ -90,12 +91,14 @@ public class CameraActivity extends Activity implements CvCameraViewListener2{
     private View.OnClickListener takephoto = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            if(count==0 && ReconMode){
+            //if(count==0 && ReconMode){
+            if(count==0){
                 //saveImage(mRgba);
                 dataList.add(calib.detectFeature(mRgba));
                 count++;
             }
-            else if(count>0 && ReconMode) {
+            //else if(count>0 && ReconMode) {
+            else if(count>0) {
                     //saveImage(mRgba);
                     dataList.add(calib.detectFeature(mRgba));
                     matchList.add(calib.detectCorrespondence(dataList.get(count - 1), dataList.get(count)));
@@ -105,13 +108,17 @@ public class CameraActivity extends Activity implements CvCameraViewListener2{
                     }
                     if (recon_process == 0 && cameraMat[0] != 0) {
                         recon = new Reconstruction(cameraMat);
-                        Mat pc = recon.InitPointCloud(dataList.get(recon_process), dataList.get(recon_process + 1), matchList.get(recon_process).getMatches());
-                        pointCloudView.setPc(pc);
+                        Mat pc = recon.InitPointCloud(dataList.get(recon_process), dataList.get(recon_process + 1), matchList.get(recon_process).getMatches(), mRgba);
+                        float[] color = recon.getColor();
+                        pointCloudView.setPc(pc, color);
+                        //pointCloudView.setPc(pc);
                         recon_process += 2;
                     }
                     else if(recon_process>0 && cameraMat[0] !=0){
-                        Mat pc = recon.addImage(dataList.get(recon_process-1),dataList.get(recon_process),matchList.get(recon_process-1).getMatches());
-                        pointCloudView.setPc(pc);
+                        Mat pc = recon.addImage(dataList.get(recon_process-1),dataList.get(recon_process),matchList.get(recon_process-1).getMatches(),mRgba);
+                        float[] color = recon.getColor();
+                        pointCloudView.setPc(pc, color);
+                        //pointCloudView.setPc(pc);
                         recon_process += 1;
                     }
                     Log.d(TAG,"count: "+count+" recon:"+recon_process);

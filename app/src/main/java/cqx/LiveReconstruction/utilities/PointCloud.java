@@ -13,10 +13,10 @@ import javax.microedition.khronos.opengles.GL10;
 public class PointCloud {
     private FloatBuffer vertexsBuffer;
     private FloatBuffer colorsBuffer;
-    private float points[];
+    private float[] points;
     private int height;
     private int width;
-    public void setPoints(Mat pointCloud){
+    public void setPoints(Mat pointCloud, float[] color){
         //Mat pc = new Mat();
        // Core.normalize(pointCloud,pc,1,0,Core.NORM_L2);
         points = new float[pointCloud.cols()*pointCloud.rows()];
@@ -27,6 +27,11 @@ public class PointCloud {
         vertexsBuffer.put(points);
         vertexsBuffer.position(0);
 
+        ByteBuffer cbb= ByteBuffer.allocateDirect(color.length*4);
+        cbb.order(ByteOrder.nativeOrder());
+        colorsBuffer=cbb.asFloatBuffer();
+        colorsBuffer.put(color);
+        colorsBuffer.position(0);
     }
     public void setResolution(int width, int height){
         this.width = width;
@@ -36,11 +41,11 @@ public class PointCloud {
         gl.glViewport(0, 0, width, height);
         gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
         gl.glVertexPointer(3,GL10.GL_FLOAT,0,vertexsBuffer);
-        //gl.glEnableClientState(GL10.GL_COLOR_ARRAY);
-        //gl.glColorPointer(4,GL10.GL_FLOAT,0,colorsBuffer);
+        gl.glEnableClientState(GL10.GL_COLOR_ARRAY);
+        gl.glColorPointer(4,GL10.GL_FLOAT,0,colorsBuffer);
         gl.glDrawArrays(GL10.GL_POINTS,0,points.length/3);
         gl.glPointSize(8f);
-        //gl.glDisableClientState(GL10.GL_COLOR_ARRAY);
+        gl.glDisableClientState(GL10.GL_COLOR_ARRAY);
         gl.glDisableClientState(GL10.GL_VERTEX_ARRAY);
     }
 }
