@@ -93,13 +93,13 @@ public class CameraActivity extends Activity implements CvCameraViewListener2{
         public void onClick(View v) {
             //if(count==0 && ReconMode){
             if(count==0){
-                //saveImage(mRgba);
+                saveImage(mRgba);
                 dataList.add(calib.detectFeature(mRgba));
                 count++;
             }
             //else if(count>0 && ReconMode) {
             else if(count>0) {
-                    //saveImage(mRgba);
+                    saveImage(mRgba);
                     dataList.add(calib.detectFeature(mRgba));
                     matchList.add(calib.detectCorrespondence(dataList.get(count - 1), dataList.get(count)));
                     if (cameraMat[0] == 0) {
